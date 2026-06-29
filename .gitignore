@@ -12,6 +12,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+backend/database/*.db
+backend/database/*.db-shm
+backend/database/*.db-wal
+
+node_modules/
+
 node_modules
 dist
 dist-ssr

@@ -16,7 +16,7 @@ export default function Contemporary({ state }) {
         position: "relative",
         overflow: "hidden",
 
-        background: "#111",
+        background: "#ffffff",
 
         fontFamily:
           "'Hind Siliguri', 'Noto Sans Bengali', sans-serif",
@@ -26,40 +26,48 @@ export default function Contemporary({ state }) {
     >
 
 
-      {/* BACKGROUND IMAGE */}
-      {state.background && (
+     {/* BACKGROUND IMAGE */}
+{state.background && (
 
-        <img
-          src={state.background}
-          alt=""
-          crossOrigin="anonymous"
+  <div
 
-          style={{
+    style={{
 
-            position: "absolute",
+      position: "absolute",
 
-            top: 0,
-            left: 0,
+      inset: 0,
 
-            width: "100%",
-            height: "100%",
+      backgroundImage:
+        `url(${state.background})`,
 
-            objectFit: "cover",
+      backgroundSize: "cover",
 
-            // CHANGE THIS VALUE
-            // 0.30 darker
-            // 0.50 balanced
-            // 0.70 brighter
-            opacity: 0.90,
+      backgroundPosition:
+        state.backgroundPosition || "center",
 
-            zIndex: 0,
+      backgroundRepeat: "no-repeat",
 
-          }}
+      opacity:
+        state.backgroundOpacity ?? 0.95,
 
-        />
+      filter: `
+        brightness(${state.backgroundBrightness ?? 1.15})
+        blur(${state.backgroundBlur ?? 0}px)
+        saturate(1.15)
+        contrast(1.08)
+      `,
 
-      )}
+      transform: "scale(1.03)",
 
+      transition: "all .25s ease",
+
+      zIndex: 0
+
+    }}
+
+  />
+
+)}
 
 
       {/* DARK OVERLAY */}
@@ -78,7 +86,7 @@ export default function Contemporary({ state }) {
 
 
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0.92))",
+            "linear-gradient(to bottom, rgba(0,0,0,.28), rgba(0,0,0,.72))",
 
 
           zIndex:1,
@@ -162,7 +170,7 @@ export default function Contemporary({ state }) {
 
           right:30,
 
-          height:70,
+          height:80,
 
 
           zIndex:2,

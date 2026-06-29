@@ -5,19 +5,38 @@ const cors = require("cors");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const OpenAI = require("openai");
+const db = require("./database/db");
 
 
 const app = express();
 
+const DAILY_LIMIT = 5;
+
+
+app.set("trust proxy", 1);
 
 app.use(cors());
 app.use(express.json());
+
+
+
+
 
 
 // OpenAI
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+// =============================
+// LOGIN CREDENTIALS
+// =============================
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+console.log("ADMIN_EMAIL:", ADMIN_EMAIL);
+console.log("ADMIN_PASSWORD:", ADMIN_PASSWORD);
 
 
 
@@ -27,7 +46,67 @@ app.get("/", (req, res) => {
 });
 
 
+// =============================
+// LOGIN
+// =============================
 
+app.post("/login", (req, res) => {
+
+  const { email, password } = req.body;
+
+  if (
+    email !== ADMIN_EMAIL ||
+    password !== ADMIN_PASSWORD
+  ) {
+    return res.status(401).json({
+      error: "Invalid email or password"
+    });
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const usage = db.prepare(`
+    SELECT count
+    FROM daily_usage
+    WHERE usage_date = ?
+  `).get(today);
+
+  const remaining = usage
+    ? DAILY_LIMIT - usage.count
+    : DAILY_LIMIT;
+
+  return res.json({
+    success: true,
+    email,
+    remaining
+  });
+
+});
+
+
+// =============================
+// REMAINING DAILY LIMIT
+// =============================
+
+app.get("/remaining", (req, res) => {
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const usage = db.prepare(`
+    SELECT count
+    FROM daily_usage
+    WHERE usage_date = ?
+  `).get(today);
+
+  const remaining = usage
+    ? DAILY_LIMIT - usage.count
+    : DAILY_LIMIT;
+
+  res.json({
+    remaining
+  });
+
+});
 
 // Image proxy (for html2canvas download)
 app.get("/proxy-image", async (req, res) => {
@@ -82,6 +161,43 @@ app.get("/proxy-image", async (req, res) => {
 
 // Generate card
 app.post("/generate-card", async (req,res)=>{
+
+const today = new Date().toISOString().split("T")[0];
+
+// Check today's usage
+let usage = db.prepare(`
+SELECT *
+FROM daily_usage
+WHERE usage_date = ?
+`).get(today);
+
+// First generation today
+if (!usage) {
+
+  db.prepare(`
+  INSERT INTO daily_usage (usage_date, count)
+  VALUES (?, ?)
+  `).run(today, 0);
+
+  usage = {
+    usage_date: today,
+    count: 0
+  };
+
+}
+
+// Stop if daily limit reached
+if (usage.count >= DAILY_LIMIT) {
+
+  return res.status(429).json({
+
+    error: "Daily limit reached.",
+
+    remaining: 0
+
+  });
+
+}
 
 
 try {
@@ -468,24 +584,96 @@ finalImage = `${backendUrl}/proxy-image?url=${encodeURIComponent(image)}`;
 
 
 
+  usage.count++;
+
+// Increase today's usage
+
+db.prepare(`
+UPDATE daily_usage
+SET count = count + 1
+WHERE usage_date = ?
+`).run(today);
+
+
+// Read updated count
+
+const updatedUsage = db.prepare(`
+SELECT count
+FROM daily_usage
+WHERE usage_date = ?
+`).get(today);
+
+
+const remaining =
+  DAILY_LIMIT - updatedUsage.count;
+
+// ==========================
+// Save Card History
+// ==========================
+
+db.prepare(`
+INSERT INTO card_history (
+
+    user_email,
+
+    headline,
+
+    summary,
+
+    hashtags,
+
+    article_url,
+
+    image_url,
+
+    source,
+
+    generated_at
+
+)
+
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+
+`).run(
+
+    ADMIN_EMAIL,
+
+    banglaHeadline,
+
+    summary,
+
+    Array.isArray(hashtags)
+      ? hashtags.join(", ")
+      : hashtags,
+
+    articleUrl,
+
+    finalImage,
+
+    source,
+
+    new Date().toISOString()
+
+);
 
 
 res.json({
 
-headline: banglaHeadline,
+  headline: banglaHeadline,
 
-summary: summary,
+  summary,
 
-hashtags: hashtags,
+  hashtags,
 
-image_url: finalImage,
+  image_url: finalImage,
 
-date: formattedDate || date,
+  date: formattedDate || date,
 
-source: source
+  source,
+
+  remaining 
 
 });
-
 
 
 
@@ -512,7 +700,21 @@ error.message
 });
 
 
+// =============================
+// CARD HISTORY
+// =============================
 
+app.get("/card-history", (req, res) => {
+
+  const rows = db.prepare(`
+    SELECT *
+    FROM card_history
+    ORDER BY generated_at DESC
+  `).all();
+
+  res.json(rows);
+
+});
 
 
 
