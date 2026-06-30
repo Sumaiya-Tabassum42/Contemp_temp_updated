@@ -1,3 +1,5 @@
+console.log("MODE:", import.meta.env.MODE);
+console.log("BASE_URL:", BASE_URL);
 const BASE_URL =
   import.meta.env.MODE === "development"
     ? "http://localhost:3000"
@@ -5,9 +7,9 @@ const BASE_URL =
 
 export async function getCardHistory() {
 
-  const response = await fetch(
-    "http://localhost:3000/card-history"
-  );
+const response = await fetch(
+  `${BASE_URL}/card-history`
+);
 
   const data = await response.json();
 
@@ -53,7 +55,7 @@ export async function generateCard(articleUrl) {
     },
 
     body: JSON.stringify({
-      articleUrl,
+      articleUrl
     }),
   });
 
@@ -68,9 +70,9 @@ export async function generateCard(articleUrl) {
 
 export async function getRemaining() {
 
-  const response = await fetch(
-    "http://localhost:3000/remaining"
-  );
+const response = await fetch(
+  `${BASE_URL}/remaining`
+);
 
   const data = await response.json();
 
