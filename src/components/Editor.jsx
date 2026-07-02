@@ -182,7 +182,7 @@ Contemporary Card Generator
 >
 
 
-  Remaining Today: {state.remaining} / 5
+  Remaining Today: {state.remaining} / 14
 </div>
 
   
