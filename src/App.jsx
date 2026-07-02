@@ -35,7 +35,7 @@ export default function App() {
 
     date: new Date().toLocaleDateString("bn-BD"),
 
-    remaining: 5,
+    remaining: 14,
 
     // Background Images
     background: null,
@@ -48,7 +48,7 @@ export default function App() {
     backgroundPosition: "center",
 
     // Daily Limit
-    dailyLimit: 5,
+    dailyLimit: 14,
     
 
   });
